@@ -100,20 +100,24 @@ saveRDS(MasseyOrdinals_MasseyOrdinals, file = "MasseyOrdinals_thru_2019_day_128.
 
 years <- c(2010:2019)
 for (i in years) {
-  print(i)
+  print(paste("Processing", i, "PBP data"))
   setwd(paste(workingDir, "/PlayByPlay_", i, sep = ""))
   eventsIter <- paste("Events_", i, sep = "")
-  assign(eventsIter, read.csv(paste("Events_", i, ".csv", sep = "")))
+  tempEvents <- read.csv(paste("Events_", i, ".csv", sep = ""))
+  assign(eventsIter, tempEvents)
   playersIter <- paste("Players_", i, sep = "")
-  assign(playersIter, read.csv(paste("Players_", i, ".csv", sep = "")))
+  tempPlayers <- read.csv(paste("Players_", i, ".csv", sep = ""))
+  assign(playersIter, tempPlayers)
   if (file.exists(paste(saveDir, "/PlayByPlay_", i, sep = ""))) {
     setwd(paste(saveDir, "/PlayByPlay_", i, sep = ""))
   } else {
     dir.create(paste(saveDir, "/PlayByPlay_", i, sep = ""))
     setwd(paste(saveDir, "/PlayByPlay_", i, sep = ""))
   }
-  saveRDS(paste("Events_", i, sep = ""), file = paste("Events_", i, ".rds", sep = ""))
-  saveRDS(paste("Players_", i, sep = ""), file = paste("Players_", i, ".rds", sep = ""))
+  eventsOutTemp = toString(paste("Events_", i, ".rds", sep = ""))
+  playersOutTemp = toString(paste("Players_", i, ".rds", sep = ""))
+  saveRDS(tempEvents, file = eventsOutTemp)
+  saveRDS(tempPlayers, file = playersOutTemp)
 }
 
 setwd(paste(workingDir, "/Prelim2019_MasseyOrdinals", sep = ""))
