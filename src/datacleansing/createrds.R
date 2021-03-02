@@ -3,6 +3,12 @@
 ### STAT 306 S21 @ Kenyon College
 
 #################################################
+### Prerequisites
+### You should have already downloaded the tarball with CSV data
+### Unroll the tarball and put it in a directory that R has +R permissions for
+### Make sure you have a directory that R has +RW permissions to write RDS files to
+
+#################################################
 ### CHANGE THESE LINES
 ### workingDir is where your CSV files are
 ### saveDir is where you want to write RDS files out to
