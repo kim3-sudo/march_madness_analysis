@@ -68,3 +68,11 @@ MEACTEAMS = ['Norfolk St']
 # Unit test using Georgia Tech
 gaTechID = teamsdf[teamsdf['TeamName'] == 'Georgia Tech'].values[0][0]
 getseasondata(gaTechID, 2018)
+
+# Train the model
+years = range(1993,2017)
+xTrain, yTrain = createTrainingSet(years)
+np.save('xTrain', xTrain)
+np.save('yTrain', yTrain)
+
+# Not going to do any hyperparameter optimization pthtbbttbtbh

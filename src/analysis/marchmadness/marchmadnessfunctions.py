@@ -444,3 +444,307 @@ class marchmadnessfunctions:
         team_2 = getSeasonData(id_2, year)
         diff = [a - b for a, b in zip(team_1, team_2)]
         return diff
+    
+    def createseasondict(year):
+        """
+        Get the team vectors for each NCAA team for a given season
+
+        Parameters
+        ----------
+        year : int
+            The year to look up data for as a four-digit number.
+
+        Returns
+        -------
+        seasonDictionary : dictionary
+            The team vector for each NCAA team for the season
+
+        """
+        seasonDictionary = collections.defaultdict(list)
+        for team in teamList:
+            team_id = teams_pd[teams_pd['Team_Name'] == team].values[0][0]
+            team_vector = getSeasonData(team_id, year)
+            seasonDictionary[team_id] = team_vector
+        return seasonDictionary
+    
+    def gethomestat(row):
+        if (row == 'H'):
+            home = 1
+        if (row == 'A'):
+            home = -1
+        if (row == 'N'):
+            home = 0
+        return home
+    
+    def createtrainingset(years):
+        """
+        
+
+        Parameters
+        ----------
+        years : TYPE
+            DESCRIPTION.
+
+        Returns
+        -------
+        xTrain : TYPE
+            DESCRIPTION.
+        yTrain : TYPE
+            DESCRIPTION.
+
+        """
+        totalNumGames = 0
+        for year in years:
+            season = reg_season_compact_pd[reg_season_compact_pd['Season'] == year]
+            totalNumGames += len(season.index)
+            tourney = tourney_compact_pd[tourney_compact_pd['Season'] == year]
+            totalNumGames += len(tourney.index)
+        numFeatures = len(getSeasonData(1181,2012)) #Just choosing a random team and seeing the dimensionality of the vector
+        xTrain = np.zeros(( totalNumGames, numFeatures + 1))
+        yTrain = np.zeros(( totalNumGames ))
+        indexCounter = 0
+        for year in years:
+            team_vectors = createSeasonDict(year)
+            season = reg_season_compact_pd[reg_season_compact_pd['Season'] == year]
+            numGamesInSeason = len(season.index)
+            tourney = tourney_compact_pd[tourney_compact_pd['Season'] == year]
+            numGamesInSeason += len(tourney.index)
+            xTrainSeason = np.zeros(( numGamesInSeason, numFeatures + 1))
+            yTrainSeason = np.zeros(( numGamesInSeason ))
+            counter = 0
+            for index, row in season.iterrows():
+                w_team = row['Wteam']
+                w_vector = team_vectors[w_team]
+                l_team = row['Lteam']
+                l_vector = team_vectors[l_team]
+                diff = [a - b for a, b in zip(w_vector, l_vector)]
+                home = getHomeStat(row['Wloc'])
+                if (counter % 2 == 0):
+                    diff.append(home) 
+                    xTrainSeason[counter] = diff
+                    yTrainSeason[counter] = 1
+                else:
+                    diff.append(-home)
+                    xTrainSeason[counter] = [ -p for p in diff]
+                    yTrainSeason[counter] = 0
+                counter += 1
+            for index, row in tourney.iterrows():
+                w_team = row['Wteam']
+                w_vector = team_vectors[w_team]
+                l_team = row['Lteam']
+                l_vector = team_vectors[l_team]
+                diff = [a - b for a, b in zip(w_vector, l_vector)]
+                home = 0 #All tournament games are neutral
+                if (counter % 2 == 0):
+                    diff.append(home) 
+                    xTrainSeason[counter] = diff
+                    yTrainSeason[counter] = 1
+                else:
+                    diff.append(-home)
+                    xTrainSeason[counter] = [ -p for p in diff]
+                    yTrainSeason[counter] = 0
+                counter += 1
+            xTrain[indexCounter:numGamesInSeason+indexCounter] = xTrainSeason
+            yTrain[indexCounter:numGamesInSeason+indexCounter] = yTrainSeason
+            indexCounter += numGamesInSeason
+        return xTrain, yTrain
+    
+    
+    def normalizeinput(arr):
+        """
+        
+
+        Parameters
+        ----------
+        arr : TYPE
+            DESCRIPTION.
+
+        Returns
+        -------
+        arr : TYPE
+            DESCRIPTION.
+
+        """
+        for i in range(arr.shape[1]):
+            minVal = min(arr[:,i])
+            maxVal = max(arr[:,i])
+            arr[:,i] =  (arr[:,i] - minVal) / (maxVal - minVal)
+        return arr
+    
+    def normalize(X):
+        """
+        
+
+        Parameters
+        ----------
+        X : TYPE
+            DESCRIPTION.
+
+        Returns
+        -------
+        TYPE
+            DESCRIPTION.
+
+        """
+        return (X - np.mean(X, axis = 0)) / np.std(X, axis = 0)
+    
+    
+    def predictGame(team_1_vector, team_2_vector, home):
+        """
+        Use the neural net to predict game output
+
+        Parameters
+        ----------
+        team_1_vector : TYPE
+            DESCRIPTION.
+        team_2_vector : TYPE
+            DESCRIPTION.
+        home : TYPE
+            DESCRIPTION.
+
+        Returns
+        -------
+        TYPE
+            DESCRIPTION.
+
+        """
+        diff = [a - b for a, b in zip(team_1_vector, team_2_vector)]
+        diff.append(home)
+        return model.predict([diff]) 
+    
+    def createPrediction():
+        """
+        
+
+        Returns
+        -------
+        None.
+
+        """
+        results = [[0 for x in range(2)] for x in range(len(sample_sub_pd.index))]
+        for index, row in sample_sub_pd.iterrows():
+            matchup_id = row['id']
+            year = matchup_id[0:4]
+            team1_id = matchup_id[5:9]
+            team2_id = matchup_id[10:14]
+            team1_vector = getSeasonData(int(team1_id), int(year))
+            team2_vector = getSeasonData(int(team2_id), int(year))
+            pred = predictGame(team1_vector, team2_vector, 0)
+            results[index][0] = matchup_id
+            results[index][1] = pred[0]
+            #results[index][1] = pred[0][1]
+        results = pd.np.array(results)
+        firstRow = [[0 for x in range(2)] for x in range(1)]
+        firstRow[0][0] = 'id'
+        firstRow[0][1] = 'pred'
+        with open("result.csv", "wb") as f:
+            writer = csv.writer(f)
+            writer.writerows(firstRow)
+            writer.writerows(results)
+    
+    def findBestK():
+        """
+        
+
+        Returns
+        -------
+        None.
+
+        """
+        K = (list)(i for i in range(1,200) if i%2!=0)
+        p = []
+        for k in K:
+            kmeans = KNeighborsClassifier(n_neighbors=k)
+            kmeans.fit(X_train, Y_train)
+            results = kmeans.fit(X_train, Y_train)
+            preds = kmeans.predict(X_test)
+            p.append(np.mean(preds == Y_test))
+        plt.plot(K, p)
+        plt.xlabel('k')
+        plt.ylabel('Accuracy')
+        plt.title('Selecting k with the Elbow Method')
+        plt.show()
+    
+    def neuralNetwork(loops):
+        """
+        
+
+        Parameters
+        ----------
+        loops : TYPE
+            DESCRIPTION.
+
+        Returns
+        -------
+        None.
+
+        """
+        accuracy=[]
+        dim = 17
+        for i in range(loops):
+            X_train, X_test, Y_train, Y_test = train_test_split(xTrain, yTrain)
+    
+            model = Sequential()
+            #model.add(Convolution1D(28, 3, border_mode='same', init='normal', input_shape=(dim, 1))) #28 1D filters of length 3
+            model.add(Dense(128, init='normal', input_dim = dim))
+            model.add(Activation('relu'))
+            model.add(Dropout(0.2))
+            model.add(Dense(64, init='normal'))
+            model.add(Activation('relu'))
+            model.add(Dropout(0.1))
+            model.add(Dense(16, init='normal'))
+            model.add(Activation('relu'))
+            model.add(Dense(2, init='normal'))
+            model.add(Activation('softmax'))
+    
+    
+            #X_train = X_train.reshape((len(X_train), dim, 1))
+            #X_test = X_test.reshape((len(X_test), dim, 1))
+            Y_train_categorical = np_utils.to_categorical(Y_train)
+            # TRAINING
+            model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+            model.fit(X_train, Y_train_categorical, batch_size=64, nb_epoch=10,shuffle=True)
+            preds = model.predict(X_test)
+            results=[]
+            for i in range(preds.shape[0]):
+                if preds[i][1] < .5:
+                    results.append(0)
+                else:
+                    results.append(1)
+            accuracy.append(np.mean(results == Y_test))
+        #accuracy.append(np.mean(predictions == Y_test))
+        print ("Accuracy: ", sum(accuracy)/len(accuracy))
+    
+    def getAllTeamVectors():
+        """
+        Usage:
+            getAllTeamVectors()
+
+        Returns
+        -------
+        None.
+
+        """
+        year = 2016
+        numFeatures = len(getSeasonData(1181,2012))
+        teamvecs = np.zeros(( 251, numFeatures ))
+        teams=[]
+        counter = 0
+        for team in teamList:
+            team_id = teams_pd[teams_pd['Team_Name'] == team].values[0][0]
+            team_vector = getSeasonData(team_id, year)
+            if (team_vector[0] == 0 or team_vector[4] == 0):
+                continue
+            teamvecs[counter] = team_vector
+            teams.append(team)
+            counter += 1
+        team = pd.np.array(teams)
+        team = np.reshape(team, (team.shape[0], 1))
+        with open("allNames.tsv", "wb") as f:
+            writer = csv.writer(f, delimiter='\t')
+            writer.writerows(team)
+        with open("allVecs.tsv", "wb") as f:
+            writer = csv.writer(f, delimiter='\t')
+            writer.writerows(teamvecs)
+
+    
