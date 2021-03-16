@@ -363,7 +363,7 @@ class marchmadnessfunctions:
         TeamID : int
             The team ID.
         year : int
-            The year to look up data for as a four-digit number..
+            The year to look up data for as a four-digit number.
     
         Returns
         -------
