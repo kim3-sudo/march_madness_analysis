@@ -7,10 +7,11 @@ STAT 306 S21 @ Kenyon College
 Main training script. Requires several dependencies.
 """
 
-import marchmadness
+from marchmadness import *
+from marchmadness.rdsfunctions import rdshandling
 
 # Prepare the team dataframe
-teamsdf = readremoteRDSdata('https://github.com/kim3-sudo/march_madness_data/blob/main/DataFiles/Teams.rds?raw=true')
+teamsdf = rdshandling.readremoteRDSdata('https://github.com/kim3-sudo/march_madness_data/blob/main/DataFiles/Teams.rds?raw=true')
 
 # Read compact data in
 reg_season_compact_pd = readremoteRDSdata(url = 'https://github.com/kim3-sudo/march_madness_data/blob/main/DataFiles/RegularSeasonCompactResults.rds?raw=true')

@@ -8,6 +8,41 @@ Script-specific function definitions
 """
 
 from rdsfunctions import *
+# Import all the things
+import pyreadr
+from random import randint
+import os
+from os import path
+import sklearn
+from __future__ import division
+import pandas as pd
+import numpy as np
+import collections
+from sklearn.cross_validation import train_test_split
+from sklearn import svm
+from sklearn.svm import SVC
+from sklearn import linear_model
+from sklearn import tree
+from keras.models import Sequential
+from keras.layers import Convolution2D, MaxPooling2D, Convolution1D
+from keras.layers import Activation, Dropout, Flatten, Dense
+from keras.optimizers import SGD
+from sklearn.cross_validation import cross_val_score
+from keras.utils import np_utils
+from sklearn.neighbors import KNeighborsClassifier
+import matplotlib.pyplot as plt
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import AdaBoostClassifier
+from sklearn.ensemble import GradientBoostingClassifier
+import sys
+from sklearn.ensemble import GradientBoostingRegressor
+import math
+import csv
+from sklearn.ensemble import VotingClassifier
+from sklearn.metrics import classification_report
+import urllib
+from sklearn.svm import LinearSVC
+from utils import *
 
 class marchmadnessfunctions:
     def checkpower6conference(TeamID = 0):
@@ -478,19 +513,19 @@ class marchmadnessfunctions:
     
     def createtrainingset(years):
         """
-        
+        Split up the number of years in the training set randomly
 
         Parameters
         ----------
-        years : TYPE
-            DESCRIPTION.
+        years : list of ints
+            A list of integers to create the training set from. The method subsets the list and creates a training set at random.
 
         Returns
         -------
-        xTrain : TYPE
-            DESCRIPTION.
-        yTrain : TYPE
-            DESCRIPTION.
+        xTrain : numpy object
+            A training set for indicator variables.
+        yTrain : numpy object
+            A training set for response variables.
 
         """
         totalNumGames = 0
@@ -513,9 +548,9 @@ class marchmadnessfunctions:
             yTrainSeason = np.zeros(( numGamesInSeason ))
             counter = 0
             for index, row in season.iterrows():
-                w_team = row['Wteam']
+                w_team = row['WTeamID']
                 w_vector = team_vectors[w_team]
-                l_team = row['Lteam']
+                l_team = row['LTeamID']
                 l_vector = team_vectors[l_team]
                 diff = [a - b for a, b in zip(w_vector, l_vector)]
                 home = getHomeStat(row['Wloc'])
@@ -529,9 +564,9 @@ class marchmadnessfunctions:
                     yTrainSeason[counter] = 0
                 counter += 1
             for index, row in tourney.iterrows():
-                w_team = row['Wteam']
+                w_team = row['WTeamID']
                 w_vector = team_vectors[w_team]
-                l_team = row['Lteam']
+                l_team = row['LTeamID']
                 l_vector = team_vectors[l_team]
                 diff = [a - b for a, b in zip(w_vector, l_vector)]
                 home = 0 #All tournament games are neutral
@@ -552,17 +587,17 @@ class marchmadnessfunctions:
     
     def normalizeinput(arr):
         """
-        
+        A method that normalizes some variables so that they are comparable (e.g., score to score differential)
 
         Parameters
         ----------
-        arr : TYPE
-            DESCRIPTION.
+        arr : array of ints or array of floats
+            An array that needs to be normalised.
 
         Returns
         -------
-        arr : TYPE
-            DESCRIPTION.
+        arr : array of ints or array of floats
+            The normalised array, in the same form that was originally passed in.
 
         """
         for i in range(arr.shape[1]):
@@ -573,17 +608,17 @@ class marchmadnessfunctions:
     
     def normalize(X):
         """
-        
+        An more general array (than normalizeinput()) that normalizes according to mean over standard deviation on a X
 
         Parameters
         ----------
-        X : TYPE
-            DESCRIPTION.
+        X : single float or int
+            The frame that is to be normalized, passed in as a single variable.
 
         Returns
         -------
-        TYPE
-            DESCRIPTION.
+        single float or int
+            The same type as was passed in will be returned in an identical frametype, the normalised variable.
 
         """
         return (X - np.mean(X, axis = 0)) / np.std(X, axis = 0)
@@ -595,17 +630,17 @@ class marchmadnessfunctions:
 
         Parameters
         ----------
-        team_1_vector : TYPE
-            DESCRIPTION.
-        team_2_vector : TYPE
-            DESCRIPTION.
-        home : TYPE
-            DESCRIPTION.
+        team_1_vector : array of ints
+            An array of scores that will be used to create a prediction model for team 1.
+        team_2_vector : array of ints
+            An array of scores that will be used to create a prediction model for team 2.
+        home : str
+            A single string used to indicate the home (if neutral, what ordinary stadium).
 
         Returns
         -------
-        TYPE
-            DESCRIPTION.
+        numpy prediction model
+            The predicted game result.
 
         """
         diff = [a - b for a, b in zip(team_1_vector, team_2_vector)]
@@ -665,14 +700,14 @@ class marchmadnessfunctions:
         plt.title('Selecting k with the Elbow Method')
         plt.show()
     
-    def neuralNetwork(loops):
+    def neuralNetwork(loops = 1000):
         """
-        
+        Train the neural network 
 
         Parameters
         ----------
-        loops : TYPE
-            DESCRIPTION.
+        loops : int, OPTIONAL
+            The number of iterations to train by. Corresponds to the number of epochs that will be used. More is better (but takes longer). Default is 1000.
 
         Returns
         -------

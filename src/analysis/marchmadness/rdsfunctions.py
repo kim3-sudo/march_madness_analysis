@@ -7,6 +7,12 @@ STAT 306 S21 @ Kenyon College
 RDS-specific function definitions
 """
 
+# Import all the things
+import pyreadr
+from random import randint
+import os
+from os import path
+
 class rdshandling:
     def getfilename(url = ''):
         '''
@@ -52,9 +58,9 @@ class rdshandling:
         """
         scratch = ''
         try:
-            scratch = getfilename(url) + '.rda'
+            scratch = rdshandling.getfilename(url) + '.rda'
         except:
-            raise Exception("Random filename issue")
+            raise Exception("Filename issue")
         local = None
         result = None
         try:
