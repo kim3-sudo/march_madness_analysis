@@ -857,5 +857,42 @@ class marchmadnessfunctions:
         print ("Shape of yTrain:", yTrain.shape)
         np.save('Data/PrecomputedMatrices/xTrain', xTrain)
         np.save('Data/PrecomputedMatrices/yTrain', yTrain) 
-        
+    
+    def predictGame(team_1_vector, team_2_vector, home, modelUsed):
+        diff = [a - b for a, b in zip(team_1_vector, team_2_vector)]
+        diff.append(home)
+        if hasattr(modelUsed, 'predict_proba'):
+    	    return modelUsed.predict_proba([diff])[0][1]
+        elif hasattr(modelUsed, 'predict'):
+            return modelUsed.predict([diff])[0]
+        else:
+            raise AttributeError("Model does not have expected prediction method")
+    
+    def trainModel(xTrain, yTrain):
+    	model = GradientBoostingRegressor(n_estimators=100, max_depth=5)
+    	model.fit(xTrain, yTrain)
+    	return model
+    
+    def randomWinner(team1, team2, modelUsed, numTrials=10):
+    	year = [curYear]
+    	teamVectors = loadTeamVectors(year)[0]
+    	team1Vector = teamVectors[int(teams_pd[teams_pd['TeamName'] == team1].values[0][0])]
+    	team2Vector = teamVectors[int(teams_pd[teams_pd['TeamName'] == team2].values[0][0])]
+    	prediction = predictGame(team1Vector, team2Vector, 0, modelUsed)
+    	team1Wins = 0
+    	for i in range(numTrials):
+    		if (prediction > random.random()):
+    			team1Wins = team1Wins + 1
+    		print ("{0} Won {1} times".format(team1, team1Wins))
+    
+    def findWinner(team1, team2, modelUsed):
+    	year = [curYear]
+    	teamVectors = loadTeamVectors(year)[0]
+    	team1Vector = teamVectors[int(teams_pd[teams_pd['TeamName'] == team1].values[0][0])]
+    	team2Vector = teamVectors[int(teams_pd[teams_pd['TeamName'] == team2].values[0][0])]
+    	prediction = predictGame(team1Vector, team2Vector, 0, modelUsed)
+    	if (prediction < 0.5):
+    		print ("Probability that {0} wins: {1}".format(team2, 1 - prediction))
+    	else:
+    		print ("Probability that {0} wins: {1}".format(team1, prediction))
     
