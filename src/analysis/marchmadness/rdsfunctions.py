@@ -14,6 +14,9 @@ import os
 from os import path
 
 class rdshandling:
+    """
+    Provides RDS handling capabilities
+    """
     def getfilename(url = ''):
         '''
         Get the strict filename or indexed directory from a URL
@@ -68,5 +71,4 @@ class rdshandling:
             result = pyreadr.read_r(local)
         except Exception as e:
             print(e)
-            raise Exception("Inaccessible URL")
         return result[None]

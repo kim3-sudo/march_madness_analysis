@@ -7,18 +7,19 @@ STAT 306 S21 @ Kenyon College
 Script-specific function definitions
 """
 
-from rdsfunctions import *
+from __future__ import division
+
 # Import all the things
 import pyreadr
 from random import randint
 import os
 from os import path
 import sklearn
-from __future__ import division
+
 import pandas as pd
 import numpy as np
 import collections
-from sklearn.cross_validation import train_test_split
+from sklearn.model_selection import train_test_split
 from sklearn import svm
 from sklearn.svm import SVC
 from sklearn import linear_model
@@ -27,7 +28,7 @@ from keras.models import Sequential
 from keras.layers import Convolution2D, MaxPooling2D, Convolution1D
 from keras.layers import Activation, Dropout, Flatten, Dense
 from keras.optimizers import SGD
-from sklearn.cross_validation import cross_val_score
+from sklearn.model_selection import cross_val_score
 from keras.utils import np_utils
 from sklearn.neighbors import KNeighborsClassifier
 import matplotlib.pyplot as plt
@@ -44,8 +45,10 @@ import urllib
 from sklearn.svm import LinearSVC
 from utils import *
 
+from .rdsfunctions import rdshandling
+
 class marchmadnessfunctions:
-    def checkpower6conference(TeamID = 0):
+    def checkPower6Conference(TeamID = 0, teamsdf = pd.DataFrame()):
         """
         Checks if a team is one of the Power 6 conferences
     
@@ -53,6 +56,8 @@ class marchmadnessfunctions:
         ----------
         TeamID : int
             An integer team ID. The default is 0.
+        teamsdf : pandas dataframe
+            A pandas dataframe with the teams list
     
         Returns
         -------
@@ -60,13 +65,47 @@ class marchmadnessfunctions:
             Returns True if the team is a Power 6 school or False otherwise.
     
         """
+        # Set constant lists for the 68 teams
+        # Yay vectors
+        ACCTEAMS = ['Florida St', 'Virginia', 'Clemson', 'Virginia Tech', 'North Carolina', 'Georgia Tech', 'Syracuse', 'Louisville']
+        PAC12TEAMS = ['Colorado', 'USC', 'Oregon', 'UCLA', 'Oregon St']
+        SECTEAMS = ['Alabama', 'Arkansas', 'Tennessee', 'Missouri', 'LSU', 'Florida']
+        BIG10TEAMS = ['Illinois', 'Michigan', 'Ohio St', 'Iowa', 'Purdue', 'Wisconsin', 'Rutgers', 'Maryland', 'Michigan St.']
+        BIG12TEAMS = ['Baylor', 'Texas', 'Oklahoma St', 'West Virginia', 'Kansas', 'Texas Tech', 'Oklahoma']
+        BIGEASTTEAMS = ['Villanova', 'Creighton', 'UCONN', 'Georgetown']
+        WESTCOASTTEAMS = ['Gonzaga', 'BYU']
+        AACTEAMS = ['Houston', 'Wichita St']
+        MOUNTAINWESTTEAMS = ['San Diego St']
+        MISSOURIVALLEYTEAMS = ['Loyola Chicago', 'Drake']
+        ATLANTIC10TEAMS = ['St Bonaventure', 'VCU']
+        CUSATEAMS = ['North Texas']
+        BIGSOUTHTEAMS = ['Winthrop']
+        BIGWESTTEAMS = ['UC Irvine']
+        MACTEAMS = ['Ohio']
+        ATLSUNTEAMS = ['Liberty']
+        SOUTHERNTEAMS = ['UNC Greensboro']
+        OHVALLEYTEAMS = ['Morehead St']
+        PATRIOTTEAMS = ['Colgate']
+        SOUTHLANDTEAMS = ['Abilene']
+        BIGSKYTEAMS = ['Eastern Washington']
+        WACTEAMS = ['Grand Canyon']
+        MAACTEAMS = ['Iona']
+        HORIZONTEAMS = ['Cleveland St']
+        SUMMITTEAMS = ['Oral Roberts']
+        CAATEAMS = ['Drexel']
+        AMEASTTEAMS = ['Hartford']
+        NECTEAMS = ['Mount St Mary\'s']
+        SUNBELTTEAMS = ['Appalachian St']
+        SWACTEAMS = ['Texas Southern']
+        MEACTEAMS = ['Norfolk St']
+        
         teamName = teamsdf.values[TeamID-1101][1]
         if (teamName in ACCTEAMS or teamName in BIG10TEAMS or teamName in BIG12TEAMS or teamName in SECTEAMS or teamName in PAC12TEAMS or teamName in BIGEASTTEAMS):
             return True
         else:
             return False
     
-    def getteamID(name):
+    def getTeamID(name):
         """
         Returns the team ID
     
@@ -83,7 +122,7 @@ class marchmadnessfunctions:
         """
         return teamsdf[teamsdf['TeamName'] == name].values[0][0]
     
-    def getteamname(TeamID):
+    def getTeamName(TeamID, teamsdf):
         """
         Returns the name of the team
     
@@ -91,6 +130,8 @@ class marchmadnessfunctions:
         ----------
         TeamID : int
             The team ID.
+        teamsdf : pandas dataframe
+            The dataframe with all of the teams.
     
         Returns
         -------
@@ -100,11 +141,12 @@ class marchmadnessfunctions:
         """
         return teamsdf[teamsdf['TeamID'] == TeamID].values[0][1]
     
-    def getnumchampionships(TeamID):
-        name = getteamname(TeamID)
+    def getNumChampionships(TeamID, teamsdf, tourney_results_pd):
+        NCAAChampionsList = tourney_results_pd['NCAA.Champion'].tolist()
+        name = marchmadnessfunctions.getTeamName(TeamID, teamsdf)
         return NCAAChampionsList.count(name)
     
-    def getlistforURL(team_list):
+    def getListForURL(team_list):
         """
         Usage:
             getlistforURL(teamList)
@@ -135,7 +177,7 @@ class marchmadnessfunctions:
         for team in team_list:
             url = base + team + '/'
     
-    def handlecases(arr):
+    def handleCases(arr):
         """
         Handles the fringe cases for Florida and FL, as well as State and St
     
@@ -162,7 +204,7 @@ class marchmadnessfunctions:
         return arr
     
     
-    def checkconferencechamp(TeamID, year):
+    def checkConferenceChamp(TeamID, year, conf_pd, teamsdf):
         """
         Checks if a school is the conference champion
     
@@ -179,18 +221,18 @@ class marchmadnessfunctions:
             Returns True if the school is the conference champion or False otherwise.
     
         """
-        year_conf_pd = conference_pd[conference_pd['Year'] == year]
-        champs = year_conf_pd['Regular Season Champ'].tolist()
+        year_conf_pd = conf_pd[conf_pd['Year'] == year]
+        champs = year_conf_pd['Regular.Season.Champ'].tolist()
         # For handling cases where there is more than one champion
         champs_separated = [words for segments in champs for words in segments.split()]
-        name = getTeamName(TeamID)
-        champs_separated = handleCases(champs_separated)
+        name = marchmadnessfunctions.getTeamName(TeamID, teamsdf)
+        champs_separated = marchmadnessfunctions.handleCases(champs_separated)
         if (name in champs_separated):
             return True
         else:
             return False
     
-    def checkconferencetourneychamp(TeamID, year):
+    def checkConferenceTourneyChamp(TeamID, year, conf_pd, teamsdf):
         """
         Check if a school is the conference tournament champion
     
@@ -207,15 +249,15 @@ class marchmadnessfunctions:
             Returns True if the school is the conference champion or False otherwise.
     
         """
-        year_conf_pd = conference_pd[conference_pd['Year'] == year]
-        champs = year_conf_pd['Tournament Champ'].tolist()
-        name = getTeamName(TeamID)
+        year_conf_pd = conf_pd[conf_pd['Year'] == year]
+        champs = year_conf_pd['Tournament.Champ'].tolist()
+        name = marchmadnessfunctions.getTeamName(TeamID, teamsdf)
         if (name in champs):
             return True
         else:
             return False
     
-    def gettourneyappearances(TeamID):
+    def getTourneyAppearances(TeamID, tourney_seeds_pd):
         """
         Get the number of times a school has appeared in the tournament
     
@@ -230,7 +272,7 @@ class marchmadnessfunctions:
             The number of appearances in March Madness.
     
         """
-        return len(tourney_seeds_pd[tourney_seeds_pd['Team'] == TeamID].index)
+        return len(tourney_seeds_pd[tourney_seeds_pd['TeamID'] == TeamID].index)
     
     def handleDifferentCSV(df):
         """
@@ -354,7 +396,7 @@ class marchmadnessfunctions:
         return df
     
     
-    def getseasondata(TeamID, year):
+    def getSeasonData(TeamID, year, reg_season_compact_pd, mmstats, ratingsstats, teamsdf, tourney_seeds_pd, conferencedf, confdf):
         """
         Get all of the data for a season for a particular team by year and load into memory for ready use
     
@@ -364,6 +406,18 @@ class marchmadnessfunctions:
             The team ID.
         year : int
             The year to look up data for as a four-digit number.
+        reg_season_compact_pd : pandas dataframe
+            A dataframe with the regular season compact results.
+        mmstats : str
+            A URL with mmstats.
+        ratingsstats : str
+            A URL with rating stats
+        teamsdf : pandas dataframe
+            A pandas dataframe with the team names
+        conferencedf : pandas dataframe
+            A pandas dataframe with the conferences that each team is in
+        yearconfdf : pandas dataframe
+            A pandas dataframe with the yearly list of conferences
     
         Returns
         -------
@@ -386,12 +440,12 @@ class marchmadnessfunctions:
         totalPointsAllowed += gamesWon['LScore'].sum()
         
         
-        stats_SOS_pd = readremoteRDSdata('Data/MMStats/MMStats_'+str(year)+'.csv')
-        stats_SOS_pd = handleDifferentCSV(stats_SOS_pd)
-        ratings_pd = pd.read_csv('Data/RatingStats/RatingStats_'+str(year)+'.csv')
-        ratings_pd = handleDifferentCSV(ratings_pd)
+        stats_SOS_pd = rdshandling.readremoteRDSdata(mmstats)
+        #$stats_SOS_pd = handleDifferentCSV(stats_SOS_pd)
+        ratings_pd = rdshandling.readremoteRDSdata(ratingsstats)
+        #ratings_pd = handleDifferentCSV(ratings_pd)
         
-        name = getTeamName(TeamID)
+        name = marchmadnessfunctions.getTeamName(TeamID, teamsdf)
         team = stats_SOS_pd[stats_SOS_pd['School'] == name]
         team_rating = ratings_pd[ratings_pd['School'] == name]
         if (len(team.index) == 0 or len(team_rating.index) == 0): #Can't find the team
@@ -421,7 +475,7 @@ class marchmadnessfunctions:
         
         #Finding tournament seed for that year
         tourneyYear = tourney_seeds_pd[tourney_seeds_pd['Season'] == year]
-        seed = tourneyYear[tourneyYear['Team'] == TeamID]
+        seed = tourneyYear[tourneyYear['TeamID'] == TeamID]
         if (len(seed.index) != 0):
             seed = seed.values[0][1]
             tournamentSeed = int(seed[1:3])
@@ -452,11 +506,9 @@ class marchmadnessfunctions:
         #return [numWins, sos, srs]
         #return [numWins, avgPointsScored, avgPointsAllowed, checkPower6Conference(TeamID), avg3sMade, avg3sAllowed, avgTurnovers,
         #        tournamentSeed, getStrengthOfSchedule(TeamID, year), getTourneyAppearances(TeamID)]
-        return [numWins, avgPointsScored, avgPointsAllowed, checkPower6Conference(TeamID), avg3sMade, avgAssists, avgTurnovers,
-               checkConferenceChamp(TeamID, year), checkConferenceTourneyChamp(TeamID, year), tournamentSeed,
-                sos, srs, avgRebounds, avgSteals, getTourneyAppearances(TeamID), getNumChampionships(TeamID)]
+        return [numWins, avgPointsScored, avgPointsAllowed, marchmadnessfunctions.checkpower6conference(TeamID, teamsdf), avg3sMade, avgAssists, avgTurnovers, marchmadnessfunctions.checkconferencechamp(TeamID, year, conference_pd = yearconfdf, teamsdf = teamsdf), marchmadnessfunctions.checkconferencetourneychamp(TeamID, year), tournamentSeed, sos, srs, avgRebounds, avgSteals, getTourneyAppearances(TeamID), getNumChampionships(TeamID)]
     
-    def compareteams(id_1, id_2, year):
+    def compareTwoTeams(id_1, id_2, year):
         """
         Compare the results for two teams 
     
@@ -480,29 +532,7 @@ class marchmadnessfunctions:
         diff = [a - b for a, b in zip(team_1, team_2)]
         return diff
     
-    def createseasondict(year):
-        """
-        Get the team vectors for each NCAA team for a given season
-
-        Parameters
-        ----------
-        year : int
-            The year to look up data for as a four-digit number.
-
-        Returns
-        -------
-        seasonDictionary : dictionary
-            The team vector for each NCAA team for the season
-
-        """
-        seasonDictionary = collections.defaultdict(list)
-        for team in teamList:
-            team_id = teams_pd[teams_pd['Team_Name'] == team].values[0][0]
-            team_vector = getSeasonData(team_id, year)
-            seasonDictionary[team_id] = team_vector
-        return seasonDictionary
-    
-    def gethomestat(row):
+    def getHomeStat(row):
         if (row == 'H'):
             home = 1
         if (row == 'A'):
@@ -511,7 +541,7 @@ class marchmadnessfunctions:
             home = 0
         return home
     
-    def createtrainingset(years):
+    def createTrainingSet(years):
         """
         Split up the number of years in the training set randomly
 
@@ -539,7 +569,7 @@ class marchmadnessfunctions:
         yTrain = np.zeros(( totalNumGames ))
         indexCounter = 0
         for year in years:
-            team_vectors = createSeasonDict(year)
+            team_vectors = createSeasonDict(year, teamsdf, reg_season_compact_pd, tourney_seeds_pd, conf_pd, tourney_results_pd)
             season = reg_season_compact_pd[reg_season_compact_pd['Season'] == year]
             numGamesInSeason = len(season.index)
             tourney = tourney_compact_pd[tourney_compact_pd['Season'] == year]
@@ -585,7 +615,7 @@ class marchmadnessfunctions:
         return xTrain, yTrain
     
     
-    def normalizeinput(arr):
+    def normalizeInput(arr):
         """
         A method that normalizes some variables so that they are comparable (e.g., score to score differential)
 
@@ -647,139 +677,185 @@ class marchmadnessfunctions:
         diff.append(home)
         return model.predict([diff]) 
     
-    def createPrediction():
+    def getSeasonData(team_id, year, reg_season_compact_pd, teamsdf, tourney_seeds_pd, conf_pd, tourney_results_pd):
         """
         
-
-        Returns
-        -------
-        None.
-
-        """
-        results = [[0 for x in range(2)] for x in range(len(sample_sub_pd.index))]
-        for index, row in sample_sub_pd.iterrows():
-            matchup_id = row['id']
-            year = matchup_id[0:4]
-            team1_id = matchup_id[5:9]
-            team2_id = matchup_id[10:14]
-            team1_vector = getSeasonData(int(team1_id), int(year))
-            team2_vector = getSeasonData(int(team2_id), int(year))
-            pred = predictGame(team1_vector, team2_vector, 0)
-            results[index][0] = matchup_id
-            results[index][1] = pred[0]
-            #results[index][1] = pred[0][1]
-        results = pd.np.array(results)
-        firstRow = [[0 for x in range(2)] for x in range(1)]
-        firstRow[0][0] = 'id'
-        firstRow[0][1] = 'pred'
-        with open("result.csv", "wb") as f:
-            writer = csv.writer(f)
-            writer.writerows(firstRow)
-            writer.writerows(results)
-    
-    def findBestK():
-        """
-        
-
-        Returns
-        -------
-        None.
-
-        """
-        K = (list)(i for i in range(1,200) if i%2!=0)
-        p = []
-        for k in K:
-            kmeans = KNeighborsClassifier(n_neighbors=k)
-            kmeans.fit(X_train, Y_train)
-            results = kmeans.fit(X_train, Y_train)
-            preds = kmeans.predict(X_test)
-            p.append(np.mean(preds == Y_test))
-        plt.plot(K, p)
-        plt.xlabel('k')
-        plt.ylabel('Accuracy')
-        plt.title('Selecting k with the Elbow Method')
-        plt.show()
-    
-    def neuralNetwork(loops = 1000):
-        """
-        Train the neural network 
 
         Parameters
         ----------
-        loops : int, OPTIONAL
-            The number of iterations to train by. Corresponds to the number of epochs that will be used. More is better (but takes longer). Default is 1000.
+        team_id : TYPE
+            DESCRIPTION.
+        year : int
+            DESCRIPTION.
 
         Returns
         -------
-        None.
+        list
+            DESCRIPTION.
 
         """
-        accuracy=[]
-        dim = 17
-        for i in range(loops):
-            X_train, X_test, Y_train, Y_test = train_test_split(xTrain, yTrain)
+        tempurl = 'https://github.com/kim3-sudo/march_madness_data/blob/main/DataFiles/RegSeasonStats/MMStats_' + str(year) + '.rds?raw=true'
+        stats_SOS_pd = rdshandling.readremoteRDSdata(tempurl)
+        stats_SOS_pd = marchmadnessfunctions.handleDifferentCSV(stats_SOS_pd)
+        tempurl = 'https://github.com/kim3-sudo/march_madness_data/blob/main/DataFiles/RatingStats/RatingStats_' + str(year) + '.rds?raw=true'
+        ratings_pd = rdshandling.readremoteRDSdata(tempurl)
+        ratings_pd = marchmadnessfunctions.handleDifferentCSV(ratings_pd)
+        year_data_pd = reg_season_compact_pd[reg_season_compact_pd['Season'] == year]
+        
+        numFeatures = 16
+        name = marchmadnessfunctions.getTeamName(TeamID = team_id, teamsdf = teamsdf)
+        team = stats_SOS_pd[stats_SOS_pd['School'] == name]
+        team_rating = ratings_pd[ratings_pd['School'] == name]
+        if (len(team.index) == 0 or len(team_rating.index) == 0): #Can't find the team
+            return [0 for x in range(numFeatures)]
     
-            model = Sequential()
-            #model.add(Convolution1D(28, 3, border_mode='same', init='normal', input_shape=(dim, 1))) #28 1D filters of length 3
-            model.add(Dense(128, init='normal', input_dim = dim))
-            model.add(Activation('relu'))
-            model.add(Dropout(0.2))
-            model.add(Dense(64, init='normal'))
-            model.add(Activation('relu'))
-            model.add(Dropout(0.1))
-            model.add(Dense(16, init='normal'))
-            model.add(Activation('relu'))
-            model.add(Dense(2, init='normal'))
-            model.add(Activation('softmax'))
+        gamesWon = team['W'].values[0]
+        gamesLost = team['L'].values[0]
+        total3sMade = team['X3P'].values[0]
+        totalTurnovers = 0 if math.isnan(team['TOV'].values[0]) else team['TOV'].values[0]
+        totalAssists = 0 if math.isnan(team['AST'].values[0]) else team['AST'].values[0]
+        totalRebounds = 0 if math.isnan(team['TRB'].values[0]) else team['TRB'].values[0]
+        totalSteals = 0 if math.isnan(team['STL'].values[0]) else team['STL'].values[0]
+        sos = team['SOS'].values[0]
+        srs = team['SRS'].values[0]
+        numWins = team['W'].values[0]
+        totalPointsScored = team['Tm.'].values[0]
     
+        totalPointsAllowed = team['Opp.'].values[0]
+        # MM_Stats 1993-1995 don't have these stats so we need to get it from somewhere else
+        if math.isnan(totalPointsAllowed):
+            gamesPlayed = year_data_pd[(year_data_pd.WTeamID == team_id) | (year_data_pd.LTeamID == team_id)] 
+            totalPointsAllowed = gamesPlayed['LScore'].sum()
+        
+        #Finding tournament seed for that year
+        tourneyYear = tourney_seeds_pd[tourney_seeds_pd['Season'] == year]
+        seed = tourneyYear[tourneyYear['TeamID'] == team_id]
+        if (len(seed.index) != 0):
+            seed = seed.values[0][1]
+            tournamentSeed = int(seed[1:3])
+        else:
+            tournamentSeed = 25 #Not sure how to represent if a team didn't make the tourney
+        
+        numGames = team['G'].values[0]
     
-            #X_train = X_train.reshape((len(X_train), dim, 1))
-            #X_test = X_test.reshape((len(X_test), dim, 1))
-            Y_train_categorical = np_utils.to_categorical(Y_train)
-            # TRAINING
-            model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
-            model.fit(X_train, Y_train_categorical, batch_size=64, nb_epoch=10,shuffle=True)
-            preds = model.predict(X_test)
-            results=[]
-            for i in range(preds.shape[0]):
-                if preds[i][1] < .5:
-                    results.append(0)
-                else:
-                    results.append(1)
-            accuracy.append(np.mean(results == Y_test))
-        #accuracy.append(np.mean(predictions == Y_test))
-        print ("Accuracy: ", sum(accuracy)/len(accuracy))
+        avgPointsScored = totalPointsScored/numGames
+        avgPointsAllowed = totalPointsAllowed/numGames
+        avg3sMade = total3sMade/numGames
+        avgTurnovers = totalTurnovers/numGames
+        avgAssists = totalAssists/numGames
+        avgRebounds = totalRebounds/numGames
+        avgSteals = totalSteals/numGames
+        return [numWins, 
+                avgPointsScored, 
+                avgPointsAllowed, 
+                marchmadnessfunctions.checkPower6Conference(team_id, teamsdf), 
+                avg3sMade, 
+                avgAssists, 
+                avgTurnovers, 
+                marchmadnessfunctions.checkConferenceChamp(team_id, year, conf_pd, teamsdf), 
+                marchmadnessfunctions.checkConferenceTourneyChamp(team_id, year, conf_pd, teamsdf), 
+                tournamentSeed, 
+                sos, 
+                srs, 
+                avgRebounds, 
+                avgSteals, 
+                marchmadnessfunctions.getTourneyAppearances(team_id, tourney_seeds_pd), 
+                marchmadnessfunctions.getNumChampionships(team_id, teamsdf, tourney_results_pd)]
     
-    def getAllTeamVectors():
-        """
-        Usage:
-            getAllTeamVectors()
-
-        Returns
-        -------
-        None.
-
-        """
-        year = 2016
-        numFeatures = len(getSeasonData(1181,2012))
-        teamvecs = np.zeros(( 251, numFeatures ))
-        teams=[]
-        counter = 0
+    def createSeasonDict(year, teamsdf, reg_season_compact_pd, tourney_seeds_pd, conf_pd, tourney_results_pd):
+        teamList = teamsdf['TeamName'].tolist()
+        seasonDictionary = collections.defaultdict(list)
         for team in teamList:
-            team_id = teams_pd[teams_pd['Team_Name'] == team].values[0][0]
-            team_vector = getSeasonData(team_id, year)
-            if (team_vector[0] == 0 or team_vector[4] == 0):
-                continue
-            teamvecs[counter] = team_vector
-            teams.append(team)
-            counter += 1
-        team = pd.np.array(teams)
-        team = np.reshape(team, (team.shape[0], 1))
-        with open("allNames.tsv", "wb") as f:
-            writer = csv.writer(f, delimiter='\t')
-            writer.writerows(team)
-        with open("allVecs.tsv", "wb") as f:
-            writer = csv.writer(f, delimiter='\t')
-            writer.writerows(teamvecs)
+            team_id = teamsdf[teamsdf['TeamName'] == team].values[0][0]
+            team_vector = marchmadnessfunctions.getSeasonData(team_id, year, reg_season_compact_pd, teamsdf, tourney_seeds_pd, conf_pd, tourney_results_pd)
+            seasonDictionary[team_id] = team_vector
+        return seasonDictionary
+    
+    def createTrainingSet(years, saveYears, reg_season_compact_pd, tourney_compact_pd, teamsdf, tourney_seeds_pd, conf_pd, tourney_results_pd):
+        """
+        Create a training set of data to train a ML model with
 
+        Parameters
+        ----------
+        years : list of ints
+            DESCRIPTION.
+        saveYears : TYPE
+            DESCRIPTION.
+        reg_season_compact_pd : pandas dataframe
+            DESCRIPTION.
+
+        Returns
+        -------
+        xTrain : numpy model
+            DESCRIPTION.
+        yTrain : numpy model
+            DESCRIPTION.
+
+        """
+        totalNumGames = 0
+        for year in years:
+            season = reg_season_compact_pd[reg_season_compact_pd['Season'] == year]
+            totalNumGames += len(season.index)
+            tourney = tourney_compact_pd[tourney_compact_pd['Season'] == year]
+            totalNumGames += len(tourney.index)
+        numFeatures = len(marchmadnessfunctions.getSeasonData(1181,2012, reg_season_compact_pd, teamsdf, tourney_seeds_pd, conf_pd, tourney_results_pd)) #Just choosing a random team and seeing the dimensionality of the vector
+        xTrain = np.zeros(( totalNumGames, numFeatures + 1))
+        yTrain = np.zeros(( totalNumGames ))
+        indexCounter = 0
+        for year in years:
+            team_vectors = marchmadnessfunctions.createSeasonDict(year, teamsdf, reg_season_compact_pd, tourney_seeds_pd, conf_pd, tourney_results_pd)
+            season = reg_season_compact_pd[reg_season_compact_pd['Season'] == year]
+            numGamesInSeason = len(season.index)
+            tourney = tourney_compact_pd[tourney_compact_pd['Season'] == year]
+            numGamesInSeason += len(tourney.index)
+            xTrainSeason = np.zeros(( numGamesInSeason, numFeatures + 1))
+            yTrainSeason = np.zeros(( numGamesInSeason ))
+            counter = 0
+            for index, row in season.iterrows():
+                w_team = row['WTeamID']
+                w_vector = team_vectors[w_team]
+                l_team = row['LTeamID']
+                l_vector = team_vectors[l_team]
+                diff = [a - b for a, b in zip(w_vector, l_vector)]
+                home = getHomeStat(row['WLoc'])
+                if (counter % 2 == 0):
+                    diff.append(home) 
+                    xTrainSeason[counter] = diff
+                    yTrainSeason[counter] = 1
+                else:
+                    diff.append(-home)
+                    xTrainSeason[counter] = [ -p for p in diff]
+                    yTrainSeason[counter] = 0
+                counter += 1
+            for index, row in tourney.iterrows():
+                w_team = row['WTeamID']
+                w_vector = team_vectors[w_team]
+                l_team = row['LTeamID']
+                l_vector = team_vectors[l_team]
+                diff = [a - b for a, b in zip(w_vector, l_vector)]
+                home = 0 #All tournament games are neutral
+                if (counter % 2 == 0):
+                    diff.append(home) 
+                    xTrainSeason[counter] = diff
+                    yTrainSeason[counter] = 1
+                else:
+                    diff.append(-home)
+                    xTrainSeason[counter] = [ -p for p in diff]
+                    yTrainSeason[counter] = 0
+                counter += 1
+            xTrain[indexCounter:numGamesInSeason+indexCounter] = xTrainSeason
+            yTrain[indexCounter:numGamesInSeason+indexCounter] = yTrainSeason
+            indexCounter += numGamesInSeason
+            print ('Finished year:', year)
+            if (year in saveYears):
+                np.save('Data/PrecomputedMatrices/TeamVectors/' + str(year) + 'TeamVectors', team_vectors)
+        return xTrain, yTrain
+    
+    def createAndSave(years, saveYears, regularSeasonCompactDf, tourneyCompactDf, teamsdf, tourney_seeds_pd, conf_pd, tourney_results_pd):
+        xTrain, yTrain = marchmadnessfunctions.createTrainingSet(years, saveYears, regularSeasonCompactDf, tourneyCompactDf, teamsdf, tourney_seeds_pd, conf_pd, tourney_results_pd)
+        print ("Shape of xTrain:", xTrain.shape)
+        print ("Shape of yTrain:", yTrain.shape)
+        np.save('Data/PrecomputedMatrices/xTrain', xTrain)
+        np.save('Data/PrecomputedMatrices/yTrain', yTrain) 
+        
     

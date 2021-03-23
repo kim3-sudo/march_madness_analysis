@@ -9,71 +9,44 @@ Main training script. Requires several dependencies.
 
 from marchmadness import *
 from marchmadness.rdsfunctions import rdshandling
+from marchmadness.marchmadnessfunctions import marchmadnessfunctions
+
+# Import all the things
+import os
 
 # Prepare the team dataframe
 teamsdf = rdshandling.readremoteRDSdata('https://github.com/kim3-sudo/march_madness_data/blob/main/DataFiles/Teams.rds?raw=true')
 
 # Read compact data in
-reg_season_compact_pd = readremoteRDSdata(url = 'https://github.com/kim3-sudo/march_madness_data/blob/main/DataFiles/RegularSeasonCompactResults.rds?raw=true')
-
-# Look at the data
-reg_season_compact_pd.head()
-
-# All games are on neutral sites, so HFA doesn't really matter...or it shouldn't
-# An examination for a different project
+regularSeasonCompactDf = rdshandling.readremoteRDSdata(url = 'https://github.com/kim3-sudo/march_madness_data/blob/main/DataFiles/RegularSeasonCompactResults.rds?raw=true')
 
 # Read advanced data
-reg_season_detailed_pd = readremoteRDSdata(url = 'https://github.com/kim3-sudo/march_madness_data/blob/main/DataFiles/NCAATourneyDetailedResults.rds?raw=true')
+tourneyResultsDf = rdshandling.readremoteRDSdata(url = 'https://github.com/kim3-sudo/march_madness_data/blob/main/DataFiles/TourneyWinners.rds?raw=true')
 
-# Look at the advanced data
-reg_season_detailed_pd.head()
-reg_season_detailed_pd.columns
+# Get training file for 1993 to 2019
+tourneyCompactDf = rdshandling.readremoteRDSdata(url = 'https://github.com/kim3-sudo/march_madness_data/blob/main/DataFiles/NCAATourneyCompactResults.rds?raw=true')
 
-# Get training file for 1985 to 2018
-tourney_compact_pd = readremoteRDSdata(url = 'https://github.com/kim3-sudo/march_madness_data/blob/main/DataFiles/NCAATourneyCompactResults.rds?raw=true')
+# Get tourney seeds
+tourneySeedsDf = rdshandling.readremoteRDSdata(url = 'https://github.com/kim3-sudo/march_madness_data/blob/main/DataFiles/NCAATourneySeeds.rds?raw=true')
 
-# Set constant lists for the 68 teams
-# Yay vectors
-ACCTEAMS = ['Florida St', 'Virginia', 'Clemson', 'Virginia Tech', 'North Carolina', 'Georgia Tech', 'Syracuse', 'Louisville']
-PAC12TEAMS = ['Colorado', 'USC', 'Oregon', 'UCLA', 'Oregon St']
-SECTEAMS = ['Alabama', 'Arkansas', 'Tennessee', 'Missouri', 'LSU', 'Florida']
-BIG10TEAMS = ['Illinois', 'Michigan', 'Ohio St', 'Iowa', 'Purdue', 'Wisconsin', 'Rutgers', 'Maryland', 'Michigan St.']
-BIG12TEAMS = ['Baylor', 'Texas', 'Oklahoma St', 'West Virginia', 'Kansas', 'Texas Tech', 'Oklahoma']
-BIGEASTTEAMS = ['Villanova', 'Creighton', 'UCONN', 'Georgetown']
-WESTCOASTTEAMS = ['Gonzaga', 'BYU']
-AACTEAMS = ['Houston', 'Wichita St']
-MOUNTAINWESTTEAMS = ['San Diego St']
-MISSOURIVALLEYTEAMS = ['Loyola Chicago', 'Drake']
-ATLANTIC10TEAMS = ['St Bonaventure', 'VCU']
-CUSATEAMS = ['North Texas']
-BIGSOUTHTEAMS = ['Winthrop']
-BIGWESTTEAMS = ['UC Irvine']
-MACTEAMS = ['Ohio']
-ATLSUNTEAMS = ['Liberty']
-SOUTHERNTEAMS = ['UNC Greensboro']
-OHVALLEYTEAMS = ['Morehead St']
-PATRIOTTEAMS = ['Colgate']
-SOUTHLANDTEAMS = ['Abilene']
-BIGSKYTEAMS = ['Eastern Washington']
-WACTEAMS = ['Grand Canyon']
-MAACTEAMS = ['Iona']
-HORIZONTEAMS = ['Cleveland St']
-SUMMITTEAMS = ['Oral Roberts']
-CAATEAMS = ['Drexel']
-AMEASTTEAMS = ['Hartford']
-NECTEAMS = ['Mount St Mary\'s']
-SUNBELTTEAMS = ['Appalachian St']
-SWACTEAMS = ['Texas Southern']
-MEACTEAMS = ['Norfolk St']
+# Get conference information
+confDf = rdshandling.readremoteRDSdata(url = 'https://github.com/kim3-sudo/march_madness_data/blob/main/DataFiles/Conference.rds?raw=true')
 
-# Unit test using Georgia Tech
-gaTechID = teamsdf[teamsdf['TeamName'] == 'Georgia Tech'].values[0][0]
-getseasondata(gaTechID, 2018)
 
-# Train the model
-years = range(1993,2017)
-xTrain, yTrain = createTrainingSet(years)
-np.save('xTrain', xTrain)
-np.save('yTrain', yTrain)
+# Train the model for all years
+years = range(1993, 2019)
+# Saves the team vectors for the following years
+saveYears = range(2015, 2019)
+if os.path.exists("Data/PrecomputedMatrices/xTrain.npy") and os.path.exists("Data/PrecomputedMatrices/yTrain.npy"):
+    print ('There is already a precomputed xTrain and yTrain.')
+    response = input('Do you want to remove these files and create a new training set? (y/n) ')
+    if (response == 'y'):
+        os.remove("Data/PrecomputedMatrices/xTrain.npy")
+        os.remove("Data/PrecomputedMatrices/yTrain.npy")
+        createAndSave(years, saveYears)
+    else: 
+        print ('Okay, going to exit now.')
+else:
+    marchmadnessfunctions.createAndSave(years, saveYears, regularSeasonCompactDf, tourneyCompactDf, teamsdf, tourneySeedsDf, confDf, tourneyResultsDf)
 
 # Not going to do any hyperparameter optimization pthtbbttbtbh
