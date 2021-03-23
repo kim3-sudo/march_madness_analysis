@@ -100,8 +100,7 @@ curYear = 2019
 
 model = GradientBoostingRegressor(n_estimators=100, max_depth=5)
 
-categories=['Wins','PPG','PPGA','PowerConf','3PG', 'APG','TOP','Conference Champ','Tourney Conference Champ',
-           'Seed','SOS','SRS', 'RPG', 'SPG', 'Tourney Appearances','National Championships','Location']
+categories=['Wins','PPG','PPGA','PowerConf','3PG', 'APG','TOP','Conference Champ','Tourney Conference Champ', 'Seed','SOS','SRS', 'RPG', 'SPG', 'Tourney Appearances','National Championships','Location']
 accuracy=[]
 
 # Choose epochs here
