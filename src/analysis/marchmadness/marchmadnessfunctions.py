@@ -817,7 +817,7 @@ class marchmadnessfunctions:
                 l_team = row['LTeamID']
                 l_vector = team_vectors[l_team]
                 diff = [a - b for a, b in zip(w_vector, l_vector)]
-                home = getHomeStat(row['WLoc'])
+                home = marchmadnessfunctions.getHomeStat(row['WLoc'])
                 if (counter % 2 == 0):
                     diff.append(home) 
                     xTrainSeason[counter] = diff

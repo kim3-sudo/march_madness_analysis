@@ -38,14 +38,14 @@ years = range(1993, 2019)
 # Saves the team vectors for the following years
 saveYears = range(2015, 2019)
 if os.path.exists("Data/PrecomputedMatrices/xTrain.npy") and os.path.exists("Data/PrecomputedMatrices/yTrain.npy"):
-    print ('There is already a precomputed xTrain and yTrain.')
-    response = input('Do you want to remove these files and create a new training set? (y/n) ')
+    print ('There is already a precomputed xTrain and yTrain model set.')
+    response = input('Do you want to remove these files and create a new training set? [y/N] ')
     if (response == 'y'):
         os.remove("Data/PrecomputedMatrices/xTrain.npy")
         os.remove("Data/PrecomputedMatrices/yTrain.npy")
         createAndSave(years, saveYears)
     else: 
-        print ('Okay, going to exit now.')
+        print ('Quitting now')
 else:
     marchmadnessfunctions.createAndSave(years, saveYears, regularSeasonCompactDf, tourneyCompactDf, teamsdf, tourneySeedsDf, confDf, tourneyResultsDf)
 
