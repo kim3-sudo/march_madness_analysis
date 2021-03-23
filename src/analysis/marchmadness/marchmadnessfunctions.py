@@ -44,6 +44,7 @@ from sklearn.metrics import classification_report
 import urllib
 from sklearn.svm import LinearSVC
 from utils import *
+from tqdm import tqdm
 
 from .rdsfunctions import rdshandling
 
@@ -763,6 +764,30 @@ class marchmadnessfunctions:
                 marchmadnessfunctions.getNumChampionships(team_id, teamsdf, tourney_results_pd)]
     
     def createSeasonDict(year, teamsdf, reg_season_compact_pd, tourney_seeds_pd, conf_pd, tourney_results_pd):
+        """
+        
+
+        Parameters
+        ----------
+        year : TYPE
+            DESCRIPTION.
+        teamsdf : TYPE
+            DESCRIPTION.
+        reg_season_compact_pd : TYPE
+            DESCRIPTION.
+        tourney_seeds_pd : TYPE
+            DESCRIPTION.
+        conf_pd : TYPE
+            DESCRIPTION.
+        tourney_results_pd : TYPE
+            DESCRIPTION.
+
+        Returns
+        -------
+        seasonDictionary : TYPE
+            DESCRIPTION.
+
+        """
         teamList = teamsdf['TeamName'].tolist()
         seasonDictionary = collections.defaultdict(list)
         for team in teamList:
@@ -811,7 +836,8 @@ class marchmadnessfunctions:
             xTrainSeason = np.zeros(( numGamesInSeason, numFeatures + 1))
             yTrainSeason = np.zeros(( numGamesInSeason ))
             counter = 0
-            for index, row in season.iterrows():
+            print('Splitting apart year', year)
+            for index, row in tqdm(season.iterrows()):
                 w_team = row['WTeamID']
                 w_vector = team_vectors[w_team]
                 l_team = row['LTeamID']
@@ -827,7 +853,8 @@ class marchmadnessfunctions:
                     xTrainSeason[counter] = [ -p for p in diff]
                     yTrainSeason[counter] = 0
                 counter += 1
-            for index, row in tourney.iterrows():
+            print('Splitting apart tourney info for', year)
+            for index, row in tqdm(tourney.iterrows()):
                 w_team = row['WTeamID']
                 w_vector = team_vectors[w_team]
                 l_team = row['LTeamID']
@@ -852,13 +879,87 @@ class marchmadnessfunctions:
         return xTrain, yTrain
     
     def createAndSave(years, saveYears, regularSeasonCompactDf, tourneyCompactDf, teamsdf, tourney_seeds_pd, conf_pd, tourney_results_pd):
+        """
+        
+
+        Parameters
+        ----------
+        years : TYPE
+            DESCRIPTION.
+        saveYears : TYPE
+            DESCRIPTION.
+        regularSeasonCompactDf : TYPE
+            DESCRIPTION.
+        tourneyCompactDf : TYPE
+            DESCRIPTION.
+        teamsdf : TYPE
+            DESCRIPTION.
+        tourney_seeds_pd : TYPE
+            DESCRIPTION.
+        conf_pd : TYPE
+            DESCRIPTION.
+        tourney_results_pd : TYPE
+            DESCRIPTION.
+
+        Returns
+        -------
+        None.
+
+        """
         xTrain, yTrain = marchmadnessfunctions.createTrainingSet(years, saveYears, regularSeasonCompactDf, tourneyCompactDf, teamsdf, tourney_seeds_pd, conf_pd, tourney_results_pd)
         print ("Shape of xTrain:", xTrain.shape)
         print ("Shape of yTrain:", yTrain.shape)
         np.save('Data/PrecomputedMatrices/xTrain', xTrain)
-        np.save('Data/PrecomputedMatrices/yTrain', yTrain) 
+        np.save('Data/PrecomputedMatrices/yTrain', yTrain)
+    
+    def loadTeamVectors(years):
+        """
+        
+
+        Parameters
+        ----------
+        years : TYPE
+            DESCRIPTION.
+
+        Returns
+        -------
+        listDictionaries : TYPE
+            DESCRIPTION.
+
+        """
+        listDictionaries = []
+        for year in years:
+            curVectors = np.load("Data/PrecomputedMatrices/TeamVectors/" + str(year) + "TeamVectors.npy").item()
+            listDictionaries.append(curVectors)
+        return listDictionaries
+
     
     def predictGame(team_1_vector, team_2_vector, home, modelUsed):
+        """
+        
+
+        Parameters
+        ----------
+        team_1_vector : TYPE
+            DESCRIPTION.
+        team_2_vector : TYPE
+            DESCRIPTION.
+        home : TYPE
+            DESCRIPTION.
+        modelUsed : TYPE
+            DESCRIPTION.
+
+        Raises
+        ------
+        AttributeError
+            DESCRIPTION.
+
+        Returns
+        -------
+        TYPE
+            DESCRIPTION.
+
+        """
         diff = [a - b for a, b in zip(team_1_vector, team_2_vector)]
         diff.append(home)
         if hasattr(modelUsed, 'predict_proba'):
@@ -869,30 +970,137 @@ class marchmadnessfunctions:
             raise AttributeError("Model does not have expected prediction method")
     
     def trainModel(xTrain, yTrain):
-    	model = GradientBoostingRegressor(n_estimators=100, max_depth=5)
-    	model.fit(xTrain, yTrain)
-    	return model
+        """
+        
+
+        Parameters
+        ----------
+        xTrain : TYPE
+            DESCRIPTION.
+        yTrain : TYPE
+            DESCRIPTION.
+
+        Returns
+        -------
+        model : TYPE
+            DESCRIPTION.
+
+        """
+        model = GradientBoostingRegressor(n_estimators=100, max_depth=5)
+        model.fit(xTrain, yTrain)
+        return model
     
-    def randomWinner(team1, team2, modelUsed, numTrials=10):
-    	year = [curYear]
-    	teamVectors = loadTeamVectors(year)[0]
-    	team1Vector = teamVectors[int(teams_pd[teams_pd['TeamName'] == team1].values[0][0])]
-    	team2Vector = teamVectors[int(teams_pd[teams_pd['TeamName'] == team2].values[0][0])]
-    	prediction = predictGame(team1Vector, team2Vector, 0, modelUsed)
-    	team1Wins = 0
-    	for i in range(numTrials):
-    		if (prediction > random.random()):
-    			team1Wins = team1Wins + 1
-    		print ("{0} Won {1} times".format(team1, team1Wins))
+    def randomWinner(team1, team2, modelUsed, curYear, numTrials=10):
+        """
+        
+
+        Parameters
+        ----------
+        team1 : TYPE
+            DESCRIPTION.
+        team2 : TYPE
+            DESCRIPTION.
+        modelUsed : TYPE
+            DESCRIPTION.
+        curYear : TYPE
+            DESCRIPTION.
+        numTrials : TYPE, optional
+            DESCRIPTION. The default is 10.
+
+        Returns
+        -------
+        None.
+
+        """
+        year = [curYear]
+        teamVectors = marchmadnessfunctions.loadTeamVectors(year)[0]
+        team1Vector = teamVectors[int(teams_pd[teams_pd['TeamName'] == team1].values[0][0])]
+        team2Vector = teamVectors[int(teams_pd[teams_pd['TeamName'] == team2].values[0][0])]
+        prediction = predictGame(team1Vector, team2Vector, 0, modelUsed)
+        team1Wins = 0
+        for i in range(numTrials):
+            if (prediction > random.random()):
+                team1Wins = team1Wins + 1
+            print ("{0} Won {1} times".format(team1, team1Wins))
     
     def findWinner(team1, team2, modelUsed):
-    	year = [curYear]
-    	teamVectors = loadTeamVectors(year)[0]
-    	team1Vector = teamVectors[int(teams_pd[teams_pd['TeamName'] == team1].values[0][0])]
-    	team2Vector = teamVectors[int(teams_pd[teams_pd['TeamName'] == team2].values[0][0])]
-    	prediction = predictGame(team1Vector, team2Vector, 0, modelUsed)
-    	if (prediction < 0.5):
-    		print ("Probability that {0} wins: {1}".format(team2, 1 - prediction))
-    	else:
-    		print ("Probability that {0} wins: {1}".format(team1, prediction))
+        """
+        
+
+        Parameters
+        ----------
+        team1 : TYPE
+            DESCRIPTION.
+        team2 : TYPE
+            DESCRIPTION.
+        modelUsed : TYPE
+            DESCRIPTION.
+
+        Returns
+        -------
+        None.
+
+        """
+        year = [curYear]
+        teamVectors = loadTeamVectors(year)[0]
+        team1Vector = teamVectors[int(teams_pd[teams_pd['TeamName'] == team1].values[0][0])]
+        team2Vector = teamVectors[int(teams_pd[teams_pd['TeamName'] == team2].values[0][0])]
+        prediction = predictGame(team1Vector, team2Vector, 0, modelUsed)
+        if (prediction < 0.5):
+            print ("Probability that {0} wins: {1}".format(team2, 1 - prediction))
+        else:
+            print ("Probability that {0} wins: {1}".format(team1, prediction))
     
+    def createPrediction(stage2 = False):
+        """
+        
+
+        Parameters
+        ----------
+        stage2 : TYPE, optional
+            DESCRIPTION. The default is False.
+
+        Returns
+        -------
+        None.
+
+        """
+        if stage2:
+            years = [curYear]
+            localPd = sample_sub_pd2
+        else:
+            # The years that we want to predict for
+            years = range(curYear - 4,curYear)
+            localPd = sample_sub_pd
+    
+        if os.path.exists("result.csv"):
+            os.remove("result.csv")
+        listDictionaries = loadTeamVectors(years)
+        print ("Loaded the team vectors")
+        results = [[0 for x in range(2)] for x in range(len(localPd.index))]
+    
+        predictionModel = GradientBoostingRegressor(n_estimators=100, max_depth=5)
+        predictionModel.fit(xTrain, yTrain)
+    
+        for index, row in localPd.iterrows():
+            matchupId = row['ID']
+            year = int(matchupId[0:4]) 
+            teamVectors = listDictionaries[year - years[0]]
+            team1Id = int(matchupId[5:9])
+            team2Id = int(matchupId[10:14])
+            team1Vector = teamVectors[team1Id] 
+            team2Vector = teamVectors[team2Id]
+            pred1 = predictGame(team1Vector, team2Vector, 0, predictionModel)
+            pred = pred1.clip(0.,1.)
+            results[index][0] = matchupId
+            results[index][1] = pred
+        results = pd.np.array(results)
+        firstRow = [[0 for x in range(2)] for x in range(1)]
+        firstRow[0][0] = 'ID'
+        firstRow[0][1] = 'Pred'
+        with open("result.csv", "w") as f:
+            writer = csv.writer(f)
+            writer.writerows(firstRow)
+            writer.writerows(results)
+            
+            

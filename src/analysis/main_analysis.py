@@ -48,6 +48,7 @@ import urllib
 from sklearn.svm import LinearSVC
 from utils import *
 from datetime import datetime
+from tqdm import tqdm
 
 # Prepare the team dataframe
 teamsdf = rdshandling.readremoteRDSdata('https://github.com/kim3-sudo/march_madness_data/blob/main/DataFiles/Teams.rds?raw=true')
@@ -68,7 +69,7 @@ tourneySeedsDf = rdshandling.readremoteRDSdata(url = 'https://github.com/kim3-su
 confDf = rdshandling.readremoteRDSdata(url = 'https://github.com/kim3-sudo/march_madness_data/blob/main/DataFiles/Conference.rds?raw=true')
 
 
-# Train the model for all years
+# Create a training data set for all years
 years = range(1993, 2019)
 # Saves the team vectors for the following years
 saveYears = range(2015, 2019)
@@ -102,9 +103,12 @@ model = GradientBoostingRegressor(n_estimators=100, max_depth=5)
 categories=['Wins','PPG','PPGA','PowerConf','3PG', 'APG','TOP','Conference Champ','Tourney Conference Champ',
            'Seed','SOS','SRS', 'RPG', 'SPG', 'Tourney Appearances','National Championships','Location']
 accuracy=[]
-numTrials = 1
 
-for i in range(numTrials):
+# Choose epochs here
+numTrials = 10
+
+# Starting model training
+for i in tqdm(range(numTrials)):
     X_train, X_test, Y_train, Y_test = train_test_split(xTrain, yTrain)
     startTime = datetime.now() # For some timing stuff
     results = model.fit(X_train, Y_train)
@@ -114,11 +118,15 @@ for i in range(numTrials):
     preds[preds >= .5] = 1
     localAccuracy = np.mean(preds == Y_test)
     accuracy.append(localAccuracy)
+    print()
     print ("Finished run #" + str(i) + ". Accuracy = " + str(localAccuracy))
     print ("Time taken: " + str(datetime.now() - startTime))
 if numTrials != 0:
 	print ("Avg accuracy:", sum(accuracy)/len(accuracy))
 
 trainedModel = marchmadnessfunctions.trainModel(xTrain, yTrain)
+
+marchmadnessfunctions.createPrediction()
+
 
 # Not going to do any hyperparameter optimization pthtbbttbtbh
