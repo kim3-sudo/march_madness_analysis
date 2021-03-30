@@ -909,8 +909,8 @@ class marchmadnessfunctions:
         xTrain, yTrain = marchmadnessfunctions.createTrainingSet(years, saveYears, regularSeasonCompactDf, tourneyCompactDf, teamsdf, tourney_seeds_pd, conf_pd, tourney_results_pd)
         print ("Shape of xTrain:", xTrain.shape)
         print ("Shape of yTrain:", yTrain.shape)
-        np.save('Data/PrecomputedMatrices/xTrain', xTrain)
-        np.save('Data/PrecomputedMatrices/yTrain', yTrain)
+        np.save('Data/PrecomputedMatrices/xTrain' + str(years[0]), xTrain)
+        np.save('Data/PrecomputedMatrices/yTrain' + str(years[0]), yTrain)
     
     def loadTeamVectors(years):
         """
