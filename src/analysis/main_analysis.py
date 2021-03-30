@@ -98,7 +98,7 @@ if numTrials != 0:
 
 trainedModel = marchmadnessfunctions.trainModel(xTrain, yTrain)
 """
-
+"""
 ##########################################
 # Create a training data set for 2017-2019
 years = range(2017, 2019)
@@ -216,18 +216,19 @@ if numTrials != 0:
 	print ("Avg accuracy:", sum(accuracy)/len(accuracy))
 
 trainedModel = marchmadnessfunctions.trainModel(xTrain, yTrain)
+"""
 
 ##########################################
-# Create a training data set for 2019 only
-years = range(2019, 2019)
+# Create a training data set for 2010-2019
+years = range(2009, 2019)
 # Saves the team vectors for the following years
-saveYears = range(2019, 2019)
-if os.path.exists("Data/PrecomputedMatrices/xTrain2019.npy") and os.path.exists("Data/PrecomputedMatrices/yTrain2019.npy"):
-    print ('There is already a precomputed xTrain2019 and yTrain2019 model set.')
+saveYears = range(2009, 2019)
+if os.path.exists("Data/PrecomputedMatrices/xTrain2009.npy") and os.path.exists("Data/PrecomputedMatrices/yTrain2009.npy"):
+    print ('There is already a precomputed xTrain2009 and yTrain2009 model set.')
     response = input('Do you want to remove these files and create a new training set? [y/N] ')
     if (response == 'y'):
-        os.remove("Data/PrecomputedMatrices/xTrain2019.npy")
-        os.remove("Data/PrecomputedMatrices/yTrain2019.npy")
+        os.remove("Data/PrecomputedMatrices/xTrain2009.npy")
+        os.remove("Data/PrecomputedMatrices/yTrain2009.npy")
         marchmadnessfunctions.createAndSave(years, saveYears, regularSeasonCompactDf, tourneyCompactDf, teamsdf, tourneySeedsDf, confDf, tourneyResultsDf)
     else: 
         print ('Quitting trainer now')
@@ -237,9 +238,9 @@ else:
     marchmadnessfunctions.createAndSave(years, saveYears, regularSeasonCompactDf, tourneyCompactDf, teamsdf, tourneySeedsDf, confDf, tourneyResultsDf)
   
 # Load training set that we just made
-if os.path.exists("Data/PrecomputedMatrices/xTrain2019.npy") and os.path.exists("Data/PrecomputedMatrices/yTrain2019.npy"):
-	xTrain = np.load("Data/PrecomputedMatrices/xTrain2019.npy")
-	yTrain = np.load("Data/PrecomputedMatrices/yTrain2019.npy")
+if os.path.exists("Data/PrecomputedMatrices/xTrain2009.npy") and os.path.exists("Data/PrecomputedMatrices/yTrain2009.npy"):
+	xTrain = np.load("Data/PrecomputedMatrices/xTrain2009.npy")
+	yTrain = np.load("Data/PrecomputedMatrices/yTrain2009.npy")
 	print ("Shape of xTrain:", xTrain.shape)
 	print ("Shape of yTrain:", yTrain.shape)
 else:
@@ -255,7 +256,7 @@ categories=['Wins','PPG','PPGA','PowerConf','3PG', 'APG','TOP','Conference Champ
 accuracy=[]
 
 # Choose epochs here
-numTrials = 10
+numTrials = 100
 
 # Starting model training
 for i in tqdm(range(numTrials)):
