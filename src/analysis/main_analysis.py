@@ -39,7 +39,7 @@ tourneySeedsDf = rdshandling.readremoteRDSdata(url = 'https://github.com/kim3-su
 # Get conference information
 confDf = rdshandling.readremoteRDSdata(url = 'https://github.com/kim3-sudo/march_madness_data/blob/main/DataFiles/Conference.rds?raw=true')
 
-"""
+
 # Create a training data set for all years
 years = range(1993, 2019)
 # Saves the team vectors for the following years
@@ -51,13 +51,13 @@ if os.path.exists("Data/PrecomputedMatrices/xTrain.npy") and os.path.exists("Dat
         os.remove("Data/PrecomputedMatrices/xTrain.npy")
         os.remove("Data/PrecomputedMatrices/yTrain.npy")
         marchmadnessfunctions.createAndSave(years, saveYears, regularSeasonCompactDf, tourneyCompactDf, teamsdf, tourneySeedsDf, confDf, tourneyResultsDf)
-    else: 
+    else:
         print ('Quitting trainer now')
 else:
     print('No precomputed matrices found')
     print('Creating a new sample subset')
     marchmadnessfunctions.createAndSave(years, saveYears, regularSeasonCompactDf, tourneyCompactDf, teamsdf, tourneySeedsDf, confDf, tourneyResultsDf)
-  
+
 # Load training set that we just made
 if os.path.exists("Data/PrecomputedMatrices/xTrain.npy") and os.path.exists("Data/PrecomputedMatrices/yTrain.npy"):
 	xTrain = np.load("Data/PrecomputedMatrices/xTrain.npy")
@@ -97,8 +97,7 @@ if numTrials != 0:
 	print ("Avg accuracy:", sum(accuracy)/len(accuracy))
 
 trainedModel = marchmadnessfunctions.trainModel(xTrain, yTrain)
-"""
-"""
+
 ##########################################
 # Create a training data set for 2017-2019
 years = range(2017, 2019)
@@ -111,13 +110,13 @@ if os.path.exists("Data/PrecomputedMatrices/xTrain2017.npy") and os.path.exists(
         os.remove("Data/PrecomputedMatrices/xTrain2017.npy")
         os.remove("Data/PrecomputedMatrices/yTrain2017.npy")
         marchmadnessfunctions.createAndSave(years, saveYears, regularSeasonCompactDf, tourneyCompactDf, teamsdf, tourneySeedsDf, confDf, tourneyResultsDf)
-    else: 
+    else:
         print ('Quitting trainer now')
 else:
     print('No precomputed matrices found')
     print('Creating a new sample subset')
     marchmadnessfunctions.createAndSave(years, saveYears, regularSeasonCompactDf, tourneyCompactDf, teamsdf, tourneySeedsDf, confDf, tourneyResultsDf)
-  
+
 # Load training set that we just made
 if os.path.exists("Data/PrecomputedMatrices/xTrain2017.npy") and os.path.exists("Data/PrecomputedMatrices/yTrain2017.npy"):
 	xTrain = np.load("Data/PrecomputedMatrices/xTrain2017.npy")
@@ -170,13 +169,13 @@ if os.path.exists("Data/PrecomputedMatrices/xTrain2018.npy") and os.path.exists(
         os.remove("Data/PrecomputedMatrices/xTrain2018.npy")
         os.remove("Data/PrecomputedMatrices/yTrain2018.npy")
         marchmadnessfunctions.createAndSave(years, saveYears, regularSeasonCompactDf, tourneyCompactDf, teamsdf, tourneySeedsDf, confDf, tourneyResultsDf)
-    else: 
+    else:
         print ('Quitting trainer now')
 else:
     print('No precomputed matrices found')
     print('Creating a new sample subset')
     marchmadnessfunctions.createAndSave(years, saveYears, regularSeasonCompactDf, tourneyCompactDf, teamsdf, tourneySeedsDf, confDf, tourneyResultsDf)
-  
+
 # Load training set that we just made
 if os.path.exists("Data/PrecomputedMatrices/xTrain2018.npy") and os.path.exists("Data/PrecomputedMatrices/yTrain2018.npy"):
 	xTrain = np.load("Data/PrecomputedMatrices/xTrain2018.npy")
@@ -216,7 +215,6 @@ if numTrials != 0:
 	print ("Avg accuracy:", sum(accuracy)/len(accuracy))
 
 trainedModel = marchmadnessfunctions.trainModel(xTrain, yTrain)
-"""
 
 ##########################################
 # Create a training data set for 2010-2019
@@ -230,13 +228,13 @@ if os.path.exists("Data/PrecomputedMatrices/xTrain2009.npy") and os.path.exists(
         os.remove("Data/PrecomputedMatrices/xTrain2009.npy")
         os.remove("Data/PrecomputedMatrices/yTrain2009.npy")
         marchmadnessfunctions.createAndSave(years, saveYears, regularSeasonCompactDf, tourneyCompactDf, teamsdf, tourneySeedsDf, confDf, tourneyResultsDf)
-    else: 
+    else:
         print ('Quitting trainer now')
 else:
     print('No precomputed matrices found')
     print('Creating a new sample subset')
     marchmadnessfunctions.createAndSave(years, saveYears, regularSeasonCompactDf, tourneyCompactDf, teamsdf, tourneySeedsDf, confDf, tourneyResultsDf)
-  
+
 # Load training set that we just made
 if os.path.exists("Data/PrecomputedMatrices/xTrain2009.npy") and os.path.exists("Data/PrecomputedMatrices/yTrain2009.npy"):
 	xTrain = np.load("Data/PrecomputedMatrices/xTrain2009.npy")
